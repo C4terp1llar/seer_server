@@ -7,27 +7,24 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         match: /.+@.+\..+/
     },
-    password: {
+    name: {
         type: String,
         required: true
     },
-    nickname: {
+    fullName: {
         type: String,
-        unique: true,
         required: true
     },
-    b_date: {
-        type: Date,
+    avatar: {
+        type: String,
         required: true
     },
-    gender: {
+    selectedProject: {
         type: String,
-        enum: ['male', 'female'],
-        required: true
+        required: false,
+        default: null
     }
 });
-
-
 
 const User= mongoose.model('User', UserSchema);
 

@@ -1,4 +1,6 @@
 const baseAPI = require("../utils/baseAPI");
+const AuthService = require("../service/AuthService");
+const JwtService = require("../service/JwtService");
 
 class AuthController {
 
@@ -10,58 +12,48 @@ class AuthController {
         }
 
         try {
-            const token = Buffer.from(`${username}:${password}`).toString("base64");
+            const authToken = Buffer.from(`${username}:${password}`).toString("base64");
 
-            const response = await baseAPI.post(
-                "rest/auth/1/session",
-                { username, password },
-                {
-                    headers: {
-                        "X-Atlassian-Token": "no-check",
-                        Authorization: `Bearer ${token}`,
-                    }
-                }
-            );
+            const {status, data, cookies} = await AuthService.loginJira(username, password, authToken)
 
-            let cookies = {};
-            if (response.status === 200 && response.headers["set-cookie"]) {
-                response.headers["set-cookie"].forEach((cookie) => {
-                    const [cookieName, cookieValue] = cookie.split(";")[0].split("=");
-                    if (cookieName === "atlassian.xsrf.token" || cookieName === "JSESSIONID") {
-                        cookies[cookieName] = cookieValue;
-                    }
-                });
+            if (status !== 200 || !cookies) {
+                return res.status(status).json({message: 'Неверный логин или пароль'});
             }
 
+            const userJiraInfo = await AuthService.getUserJiraInfo(cookies)
+
+            let currentUser = await AuthService.getUser(userJiraInfo.data.email);
+
+            if (!currentUser) {
+                currentUser = await AuthService.createUser(userJiraInfo.data);
+            }
+
+            const userToken = JwtService.createToken({
+                email: currentUser.email,
+                uid: currentUser._id.toString(),
+                cookies: cookies
+            })
+
             res.status(200).json({
-                message: "Авторизация успешна",
-                cookies,
-                data: response.data
+                message: `Авторизация успешна! Добро пожаловать, ${currentUser.name}`,
+                token: userToken,
+                user: {
+                    email: currentUser.email,
+                    name: currentUser.name,
+                    fullName: currentUser.fullName,
+                    avatar: currentUser.avatar,
+                    selectedProject: currentUser.selectedProject,
+                }
             });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ error: "Ошибка при авторизации" });
-        }
-    }
-
-    async logout (req, res) {
-        try {
-
-
-
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Ошибка при логауте' });
+            return res.status(500).json({ error: "Ошибка при авторизации, попробуйте позже" });
         }
     }
 
     async checkAuth (req, res) {
         try {
-            const response = await baseAPI.get('/rest/auth/1/session', {
-                headers: req.headers,
-            })
-
-            res.status(200).json({...response.data});
+            res.status(200).json({message: 'ok'});
         } catch (err) {
             console.error(err);
             return res.status(500).json({ error: 'Ошибка при проверке авторизации' });

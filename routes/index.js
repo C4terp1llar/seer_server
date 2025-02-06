@@ -11,7 +11,8 @@ router.get('/sync', cookieMiddleware, AuthController.checkAuth);
 
 router.get('/user', cookieMiddleware, AppController.getUser);
 
-// router.get('/project', cookieMiddleware, AppController.getUser);
-router.get('/project/:id/issue', cookieMiddleware, AppController.getIssuesStats);
+router.get('/project', cookieMiddleware, AppController.getProjects);
+router.post('/project', cookieMiddleware, AppController.setProject);
+
 
 module.exports = router;
