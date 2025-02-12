@@ -14,5 +14,12 @@ router.get('/user', cookieMiddleware, AppController.getUser);
 router.get('/project', cookieMiddleware, AppController.getProjects);
 router.post('/project', cookieMiddleware, AppController.setProject);
 
+router.get('/issue', cookieMiddleware, AppController.getIssuesStats);
+
+router.post('/query/check', cookieMiddleware, AppController.checkJqlQuery);
+router.post('/query', cookieMiddleware, AppController.createJqlQuery);
+router.delete('/query/:queryId', cookieMiddleware, AppController.deleteJqlQuery);
+router.get('/query', cookieMiddleware, AppController.getJqlQueries);
+router.get('/query/:queryId', cookieMiddleware, AppController.getJqlQuery);
 
 module.exports = router;

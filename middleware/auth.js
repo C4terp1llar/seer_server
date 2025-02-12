@@ -25,6 +25,12 @@ const cookieMiddleware = async (req, res, next) => {
             return res.status(401).json({ error: "Не авторизован: куки недействителены или пользователь не существует" });
         }
 
+        req.jiraData = {
+            login: userData.name,
+            project: userData.selectedProject,
+        };
+
+
         next();
     } catch (err) {
         console.error(err);
