@@ -14,6 +14,10 @@ const JqlQuerySchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    fields: {
+        type: [String],
+        default: []
+    },
     result: {
         type: mongoose.Schema.Types.Mixed,
         required: false

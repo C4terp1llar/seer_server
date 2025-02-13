@@ -19,6 +19,7 @@ class JiraService {
         }
     }
 
+
     async getIssuesStats(headers, project) {
         try {
             const queries = {
@@ -44,23 +45,40 @@ class JiraService {
         }
     }
 
-    async checkJqlQuery(headers, uid, jqlQuery) {
+    async checkJqlQuery(headers, uid, jqlQuery, fields) {
         try {
-            const existingQuery = await JqlQuery.findOne({ user: uid, query: jqlQuery });
+            const existingQuery = await JqlQuery.findOne({
+                user: uid,
+                query: jqlQuery,
+                fields: { $all: fields || [] }
+            });
 
             if (existingQuery) {
-                return { status: 400, message: "Этот запрос уже существует." };
+                return { status: 400, data: null, message: "Этот запрос уже существует." };
             }
 
-            await baseAPI.get(`/rest/api/2/search?jql=${encodeURIComponent(jqlQuery)}&maxResults=0`, { headers });
+            const requestBody = {
+                jql: jqlQuery,
+                startAt: 0,
+                maxResults: 1000,
+                fields: fields || []
+            };
 
-            return { status: 200, message: "Запрос корректен!" };
+            const response = await baseAPI.post(`/rest/api/2/search`, requestBody, { headers });
+
+            if (fields && fields.length > 0) {
+                requestBody.fields = fields;
+                const fieldResponse = await baseAPI.post(`/rest/api/2/search`, requestBody, { headers });
+                return { status: 200, data: fieldResponse.data, message: "Запрос корректен!" };
+            } else {
+                return { status: 200, data: { total: response.data.total }, message: "Запрос корректен!" };
+            }
+
         } catch (err) {
             console.error("Ошибка при проверке JQL запроса:", err.response?.data || err.message);
-            return { status: err.response?.status || 500, message: "Ошибка при проверке запроса." };
+            return { status: err.response?.status || 500, data: err.response?.data?.errorMessages || 'Некорректный JQL запрос', message: "Ошибка при проверке запроса." };
         }
     }
-
 
 
 }

@@ -14,7 +14,11 @@ const cookieMiddleware = async (req, res, next) => {
 
         req.uid = uid;
         req.email = email;
-        req.headers["Cookie"] = `JSESSIONID=${cookies['JSESSIONID']}; atlassian.xsrf.token=${cookies['atlassian.xsrf.token']}`;
+        req.headers = {
+            "Cookie": `JSESSIONID=${cookies['JSESSIONID']}; atlassian.xsrf.token=${cookies['atlassian.xsrf.token']}`,
+            "X-XSRF-TOKEN": `${cookies['atlassian.xsrf.token']}`
+        };
+
 
         const [userData, jiraSessionData] = await Promise.all([
             AuthService.getUserById(uid),

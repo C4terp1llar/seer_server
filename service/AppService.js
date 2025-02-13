@@ -1,6 +1,7 @@
 const User = require("../models/UserModel");
 const JqlQuery = require("../models/JqlQueryModel");
 const JiraService = require("../service/JiraService");
+const {Types} = require("mongoose");
 class AppService {
 
     async setProject(uid, newProject) {
@@ -12,14 +13,14 @@ class AppService {
         }
     }
 
-    async createJqlQuery(uid, name, query, headers) {
+    async createJqlQuery(uid, name, query, fields, headers) {
         try {
-            const { status, message } = await JiraService.checkJqlQuery(headers, uid, query);
-            if (status !== 200) {
-                throw new Error(message);
+            const querySnap = await JiraService.checkJqlQuery(headers, uid, query);
+            if (querySnap.status !== 200) {
+                throw new Error(querySnap.message);
             }
 
-            const newQuery = new JqlQuery({ user: uid, name, query });
+            const newQuery = new JqlQuery({ user: uid, name, query, fields, result: querySnap.data });
             return await newQuery.save();
         } catch (err) {
             console.error('Ошибка при создании JQL запроса', err);
@@ -45,11 +46,11 @@ class AppService {
     async getJqlQueries(uid, page = 1, limit = 25) {
         try {
             const queries = await JqlQuery.aggregate([
-                { $match: { user: uid } },
+                { $match: { user: new Types.ObjectId(uid) } },
                 { $skip: (page - 1) * limit },
                 { $limit: limit + 1 },
                 { $sort: {createdAt: -1} },
-                { $project: { name: 1, query: 1, result: 1, createdAt: 1 } }
+                { $project: { __v: 0 } }
             ]);
 
             const hasMore = queries.length > limit;

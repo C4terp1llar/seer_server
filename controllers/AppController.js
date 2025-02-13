@@ -61,17 +61,17 @@ class AppController {
     }
 
     async checkJqlQuery(req, res) {
-        const { jqlQuery } = req.body;
+        const { jqlQuery, fields } = req.body;
 
         if (!jqlQuery) return res.status(400).json({error: 'Нехватает данных или данные некорректны'});
 
         try {
-            const { status, message } = await JiraService.checkJqlQuery(req.headers, req.uid, jqlQuery);
+            const checkSnap = await JiraService.checkJqlQuery(req.headers, req.uid, jqlQuery, fields);
 
-            if (status === 200) {
-                return res.status(200).json({ message });
+            if (checkSnap.status === 200) {
+                return res.status(200).json({ ...checkSnap });
             } else {
-                return res.status(status).json({ error: message });
+                return res.status(checkSnap.status).json({ ...checkSnap });
             }
 
         } catch (err) {
@@ -81,12 +81,12 @@ class AppController {
     }
 
     async createJqlQuery(req, res) {
-        const { name, query } = req.body;
+        const { name, query, fields } = req.body;
 
         if (!name || !query) return res.status(400).json({ error: 'Необходимо указать имя и запрос' });
 
         try {
-            const newQuery = await AppService.createJqlQuery(req.uid, name, query, req.headers);
+            const newQuery = await AppService.createJqlQuery(req.uid, name, query, fields, req.headers);
             return res.status(201).json({ query: newQuery });
         } catch (err) {
             console.error('Ошибка при создании JQL запроса');
