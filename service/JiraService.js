@@ -47,9 +47,10 @@ class JiraService {
 
     async checkJqlQuery(headers, uid, jqlQuery, fields) {
         try {
+
             const existingQuery = await JqlQuery.findOne({
                 user: uid,
-                query: jqlQuery,
+                query: { $regex: new RegExp(`^${jqlQuery.toLowerCase().trim()}$`, 'i') },
                 fields: { $all: fields || [] }
             });
 

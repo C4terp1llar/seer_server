@@ -15,7 +15,7 @@ class AppService {
 
     async createJqlQuery(uid, name, query, fields, headers) {
         try {
-            const querySnap = await JiraService.checkJqlQuery(headers, uid, query);
+            const querySnap = await JiraService.checkJqlQuery(headers, uid, query, fields);
             if (querySnap.status !== 200) {
                 throw new Error(querySnap.message);
             }
@@ -43,20 +43,30 @@ class AppService {
         }
     }
 
-    async getJqlQueries(uid, page = 1, limit = 25) {
+    async getJqlQueries(uid, page = 1, limit = 25, headers) {
         try {
-            const queries = await JqlQuery.aggregate([
-                { $match: { user: new Types.ObjectId(uid) } },
-                { $skip: (page - 1) * limit },
-                { $limit: limit + 1 },
-                { $sort: {createdAt: -1} },
-                { $project: { __v: 0 } }
-            ]);
+            let queries = await JqlQuery.find({ user: new Types.ObjectId(uid) })
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit + 1)
+                .lean();
 
             const hasMore = queries.length > limit;
             if (hasMore) {
                 queries.pop();
             }
+
+            await Promise.all(queries.map(async (query) => {
+                try {
+                    const querySnap = await JiraService.checkJqlQuery(headers, query.user, query.query, query.fields);
+                    if (querySnap.status === 200) {
+                        query.result = querySnap.data;
+                        await JqlQuery.updateOne({ _id: query._id }, { $set: { result: querySnap.data } });
+                    }
+                } catch (err) {
+                    console.error(`Ошибка обновления запроса ${query._id}:`, err);
+                }
+            }));
 
             return {
                 queries,
