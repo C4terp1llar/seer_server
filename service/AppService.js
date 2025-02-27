@@ -1,7 +1,11 @@
 const User = require("../models/UserModel");
 const JqlQuery = require("../models/JqlQueryModel");
 const JiraService = require("../service/JiraService");
+
+const checkIds = require("../utils/checkIds");
 const {Types} = require("mongoose");
+
+
 class AppService {
 
     async setProject(uid, newProject) {
@@ -49,24 +53,14 @@ class AppService {
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit + 1)
-                .lean();
+                .select('-__v');
 
             const hasMore = queries.length > limit;
             if (hasMore) {
                 queries.pop();
             }
 
-            await Promise.all(queries.map(async (query) => {
-                try {
-                    const querySnap = await JiraService.checkJqlQuery(headers, query.user, query.query, query.fields);
-                    if (querySnap.status === 200) {
-                        query.result = querySnap.data;
-                        await JqlQuery.updateOne({ _id: query._id }, { $set: { result: querySnap.data } });
-                    }
-                } catch (err) {
-                    console.error(`Ошибка обновления запроса ${query._id}:`, err);
-                }
-            }));
+            queries = await Promise.all(queries.map(query => this.updateJqlQueryResult(query, headers)));
 
             return {
                 queries,
@@ -78,21 +72,37 @@ class AppService {
         }
     }
 
-    async getJqlQueryById(uid, queryId) {
+    async getJqlQueryById(uid, queryId, headers) {
+        const invalidIds = checkIds(uid, queryId);
+        if (invalidIds) return invalidIds;
+
         try {
-            const query = await JqlQuery.findOne({ _id: queryId, user: uid }).select('-__v').lean();
+            let query = await JqlQuery.findOne({ _id: queryId, user: new Types.ObjectId(uid) }).select('-__v');
 
             if (!query) {
                 throw new Error("Запрос не найден или у вас нет доступа к этому запросу.");
             }
 
-            return query;
+            return await this.updateJqlQueryResult(query, headers);
         } catch (err) {
             console.error('Ошибка при получении JQL запроса', err);
             throw err;
         }
     }
 
+    async updateJqlQueryResult(query, headers) {
+        try {
+            const querySnap = await JiraService.checkJqlQuery(headers, query.user, query.query, query.fields);
+            if (querySnap.status === 200) {
+                query.result = querySnap.data;
+                await query.save();
+            }
+        } catch (err) {
+            console.error(`Ошибка обновления запроса ${query._id}:`, err);
+        }
+
+        return query;
+    }
 
 
 }

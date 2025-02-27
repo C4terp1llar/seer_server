@@ -126,8 +126,13 @@ class AppController {
         if (!queryId) return res.status(400).json({ error: 'Необходимо указать id запроса' });
 
         try {
-            const query = await AppService.getJqlQueryById(req.uid, queryId);
-            return res.status(200).json({ query });
+            const result = await AppService.getJqlQueryById(req.uid, queryId);
+
+            if (result.error) {
+                return res.status(result.status).json({ error: result.message });
+            }
+
+            return res.status(200).json({ query: result });
         } catch (err) {
             console.error('Ошибка при получении JQL запроса');
             return res.status(500).json({ error: 'Ошибка при получении JQL запроса' });
