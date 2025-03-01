@@ -22,4 +22,8 @@ router.delete('/query/:queryId', cookieMiddleware, AppController.deleteJqlQuery)
 router.get('/query', cookieMiddleware, AppController.getJqlQueries);
 router.get('/query/:queryId', cookieMiddleware, AppController.getJqlQuery);
 
+router.get('/note', cookieMiddleware, AppController.getNote);
+router.post('/note', cookieMiddleware, AppController.createNote);
+
+
 module.exports = router;

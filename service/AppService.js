@@ -1,4 +1,6 @@
 const User = require("../models/UserModel");
+const Note = require("../models/NoteModel");
+
 const JqlQuery = require("../models/JqlQueryModel");
 const JiraService = require("../service/JiraService");
 
@@ -104,6 +106,43 @@ class AppService {
         return query;
     }
 
+    async createNote(uid, title, content) {
+        try {
+            let note = await Note.findOne({ user: new Types.ObjectId(uid) });
+
+            if (note) {
+                note.title = title;
+                note.content = content;
+                await note.save();
+                return note;
+            } else {
+                const newNote = new Note({
+                    user: uid,
+                    title,
+                    content
+                });
+                return await newNote.save();
+            }
+        } catch (err) {
+            console.error('Ошибка при создании или обновлении заметки', err);
+            throw err;
+        }
+    }
+
+    async getNote(uid) {
+        try {
+            const note = await Note.findOne({ user: new Types.ObjectId(uid) });
+
+            if (!note) {
+                return null;
+            }
+
+            return note;
+        } catch (err) {
+            console.error('Ошибка при получении заметки', err);
+            throw err;
+        }
+    }
 
 }
 

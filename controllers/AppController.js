@@ -139,6 +139,32 @@ class AppController {
         }
     }
 
+    async getNote(req, res) {
+        try {
+            const note = await AppService.getNote(req.uid);
+            return res.status(200).json({ note });
+        } catch (err) {
+            console.error('Ошибка при получении заметки');
+            return res.status(500).json({ error: 'Ошибка при получении заметки' });
+        }
+    }
+
+    async createNote(req, res) {
+        const { title, content } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Необходимо указать title и content' });
+        }
+
+        try {
+            const note = await AppService.createNote(req.uid, title, content);
+            return res.status(200).json({ note });
+        } catch (err) {
+            console.error('Ошибка при создании или обновлении заметки');
+            return res.status(500).json({ error: 'Ошибка при создании или обновлении заметки' });
+        }
+    }
+
 }
 
 module.exports = new AppController();
