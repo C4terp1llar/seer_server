@@ -22,12 +22,19 @@ class JiraService {
 
     async getIssuesStats(headers, project) {
         try {
+            const today = new Date();
+            const startOfSprint = new Date(today.getFullYear(), today.getMonth(), 1); // нч спринта, 1-ое число текущего месяца
+            const endOfSprint = new Date(today.getFullYear(), today.getMonth() + 1, 1);  // кц спринта, 1-ое число след месяца
+
+            const startDate = startOfSprint.toISOString().split('T')[0];
+            const endDate = endOfSprint.toISOString().split('T')[0];
+
             const queries = {
-                total: `project=${project}`,
-                in_work: `project=${project} AND status IN ("In Progress")`,
-                accepted: `project=${project} AND status IN ("Done")`,
-                to_do: `project=${project} AND status IN ("To Do")`,
-                errors: `project=${project} AND issuetype="Bug"`
+                total: `project=${project} AND created >= "${startDate}" AND created < "${endDate}"`,
+                in_work: `project=${project} AND status IN ("На проверке QA") AND created >= "${startDate}" AND created < "${endDate}"`,
+                accepted: `project=${project} AND status IN ("Done") AND created >= "${startDate}" AND created < "${endDate}"`,
+                to_do: `project=${project} AND status IN ("To Do") AND created >= "${startDate}" AND created < "${endDate}"`,
+                errors: `project=${project} AND issuetype="Bug" AND created >= "${startDate}" AND created < "${endDate}"`
             };
 
             const endpoints = Object.entries(queries).map(([key, jql]) =>
@@ -37,8 +44,9 @@ class JiraService {
             );
 
             const results = await Promise.all(endpoints);
+            console.log(results)
 
-            return {status: 200, data: Object.assign({}, ...results)};
+            return { status: 200, data: Object.assign({}, ...results) };
         } catch (err) {
             console.error("Ошибка при получении статистики по задачам:", err.response?.data || err.message);
             return { status: err.response?.status || 500, data: null };
