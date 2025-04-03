@@ -25,5 +25,8 @@ router.get('/query/:queryId', cookieMiddleware, AppController.getJqlQuery);
 router.get('/note', cookieMiddleware, AppController.getNote);
 router.post('/note', cookieMiddleware, AppController.createNote);
 
+router.get('/event/months', cookieMiddleware, AppController.getEventsByMonth);
+router.get('/event', cookieMiddleware, AppController.getEventsByDay);
+router.post('/event', cookieMiddleware, AppController.createEvent);
 
 module.exports = router;

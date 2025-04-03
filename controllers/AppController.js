@@ -165,6 +165,54 @@ class AppController {
         }
     }
 
+    async createEvent(req, res) {
+        const { day, title, time_from, time_to, description, color } = req.body;
+
+        if (!day  || !time_from  || !time_to || !title) {
+            return res.status(400).json({ error: 'Необходимо указать day и time_from и time_to и title' });
+        }
+
+        try {
+            const result = await AppService.createEvent(req.uid, title, day, time_from, time_to, description, color);
+
+            if (result.error) {
+                return res.status(result.status).json({ error: result.message });
+            }
+
+            return res.status(201).json({ event: result.data });
+        } catch (err) {
+            console.error('Ошибка при создании события');
+            return res.status(500).json({ error: 'Ошибка при создании события' });
+        }
+    }
+
+    async getEventsByMonth(req, res) {
+        try {
+            const result = await AppService.getEventsByMonth(req.uid);
+            return res.status(200).json({ schedule: result });
+        } catch (err) {
+            console.error('Ошибка при получении дат событий');
+            return res.status(500).json({ error: 'Ошибка при получении дат событий' });
+        }
+    }
+
+    async getEventsByDay(req, res) {
+        const { day, page = 1, limit = 10} = req.query;
+
+        if (!day) {
+            return res.status(400).json({ error: "Необходимо указать day" });
+        }
+
+        try {
+            const data = await AppService.getEventsByDay(req.uid, day, +page, +limit);
+            return res.status(200).json({ ...data });
+        } catch (err) {
+            console.error("Ошибка при получении событий за день", err);
+            return res.status(500).json({ error: "Ошибка при получении событий за день" });
+        }
+    }
+
+
 }
 
 module.exports = new AppController();

@@ -1,5 +1,6 @@
 const User = require("../models/UserModel");
 const Note = require("../models/NoteModel");
+const Event = require("../models/EventModel");
 
 const JqlQuery = require("../models/JqlQueryModel");
 const JiraService = require("../service/JiraService");
@@ -140,6 +141,85 @@ class AppService {
             return note;
         } catch (err) {
             console.error('Ошибка при получении заметки', err);
+            throw err;
+        }
+    }
+
+    async getEventsByMonth(uid){
+        try {
+            const events = await Event.find({ user: new Types.ObjectId(uid) }).select("day");
+
+            return [...new Set(events.map(event => event.day.toISOString().split("T")[0]))] || [];
+        } catch (err) {
+            console.error("Ошибка при получении дат событий", err);
+            throw err;
+        }
+    }
+
+    async createEvent(uid, title, day, time_from, time_to, description = "", color) {
+        try {
+            const isTitleExists = await Event.exists({
+                user: new Types.ObjectId(uid),
+                day,
+                title
+            });
+
+            if (isTitleExists) {
+                return { status: 400, data: null, message: "Событие с таким названием уже существует в этот день" };
+            }
+
+            const isTimeOverlap = await Event.exists({
+                user: new Types.ObjectId(uid),
+                day,
+                $or: [
+                    { time_from: { $lt: time_to }, time_to: { $gt: time_from } },
+                    { time_from: time_from, time_to: time_to }
+                ]
+            });
+
+            if (isTimeOverlap) {
+                return { status: 400, data: null, message: "Событие с таким временным интервалом уже существует" };
+            }
+
+            const newEvent = new Event({
+                user: new Types.ObjectId(uid),
+                title,
+                day,
+                time_from,
+                time_to,
+                description,
+                color
+            });
+
+            await newEvent.save();
+            return { status: 201, data: newEvent, message: "Событие успешно создано!" };
+        } catch (err) {
+            console.error("Ошибка при создании события", err);
+            throw err;
+        }
+    }
+
+    async getEventsByDay(uid, day, page, limit) {
+        try {
+            const events = await Event.find({
+                user: new Types.ObjectId(uid),
+                day: new Date(day)
+            })
+                .sort({ time_from: 1 })
+                .skip((page - 1) * limit)
+                .limit(limit + 1);
+
+            const hasMore = events.length > limit;
+            if (hasMore) {
+                events.pop();
+            }
+
+            return {
+                events: events || [],
+                hasMore
+            };
+        } catch (err) {
+            console.error("Ошибка при получении событий за день", err);
             throw err;
         }
     }
