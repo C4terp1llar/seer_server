@@ -1,7 +1,8 @@
 const axios = require("axios");
 
 const baseAPI = axios.create({
-    baseURL: 'http://84.201.149.172:8080/',
+    // baseURL: 'http://84.201.149.172:8080/',
+    baseURL: 'https://jira.stilsoft.ru',
     withCredentials: true,
     headers: {
         "Content-Type": "application/json",
