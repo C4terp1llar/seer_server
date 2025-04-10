@@ -22,14 +22,14 @@ class AuthController {
 
             const userJiraInfo = await AuthService.getUserJiraInfo(cookies)
 
-            let currentUser = await AuthService.getUser(userJiraInfo.data.email);
+            let currentUser = await AuthService.getUser(userJiraInfo.data.email ?? userJiraInfo.data.name);
 
             if (!currentUser) {
                 currentUser = await AuthService.createUser(userJiraInfo.data);
             }
 
             const userToken = JwtService.createToken({
-                email: currentUser.email,
+                email: currentUser.email ?? userJiraInfo.data.name,
                 uid: currentUser._id.toString(),
                 cookies: cookies
             })

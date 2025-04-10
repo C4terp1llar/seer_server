@@ -3,13 +3,14 @@ const mongoose = require("mongoose");
 const UserSchema = new mongoose.Schema({
     email: {
         type: String,
-        required: true,
+        required: false,
         unique: true,
         match: /.+@.+\..+/
     },
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
     },
     fullName: {
         type: String,

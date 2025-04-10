@@ -42,6 +42,8 @@ class AuthService {
 
             const response = await baseAPI.get("rest/api/2/myself", { headers: headers});
 
+            console.log(response.data)
+
             return {
                 status: response.status,
                 data: {
@@ -57,9 +59,12 @@ class AuthService {
         }
     }
 
-    async getUser(email) {
+    async getUser(str) {
         try {
-            return await User.findOne({email}).select('-__v').lean()
+            return await Promise.any([
+                User.findOne({email: str}).select('-__v').lean(),
+                User.findOne({name: str}).select('-__v').lean()
+            ])
         } catch (err) {
             console.error('Ошибка при поиске пользователя', err)
             throw err
