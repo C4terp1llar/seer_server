@@ -22,12 +22,14 @@ class JiraService {
 
     async getIssuesStats(headers, project) {
         try {
+            const baseFilter = `project=${project} AND created >= -30d`;
+
             const queries = {
-                total: `project=${project}`,
-                in_work: `project=${project} AND status IN ("In Progress")`,
-                accepted: `project=${project} AND status IN ("Done")`,
-                to_do: `project=${project} AND status IN ("To Do")`,
-                errors: `project=${project} AND issuetype="Bug"`
+                total: `${baseFilter}`,
+                in_work: `${baseFilter} AND status IN ("In Progress")`,
+                accepted: `${baseFilter} AND status IN ("Done")`,
+                to_do: `${baseFilter} AND status IN ("To Do")`,
+                errors: `${baseFilter} AND issuetype="Ошибка"`
             };
 
             const endpoints = Object.entries(queries).map(([key, jql]) =>
@@ -60,7 +62,23 @@ class JiraService {
 
     async getHighPriorityIssueByIndex(headers, projectKey, index = 0) {
         try {
-            const jql = `project=${projectKey} AND priority in (High, Highest) ORDER BY created DESC`;
+            const excludedStatuses = [
+                "Resolved",
+                "Closed",
+                "Done",
+                "Отмененный",
+                "Нет информации",
+                "Не актуально",
+                "Завершено",
+                "Заблокировано"
+            ];
+
+            const jql = `
+            project = ${projectKey}
+            AND priority in (Критичный, Высокий)
+            AND status NOT IN (${excludedStatuses.map(s => `"${s}"`).join(", ")})
+            ORDER BY created DESC
+            `.trim();
 
             const response = await baseAPI.get(
                 `/rest/api/2/search?jql=${encodeURIComponent(jql)}&startAt=${index}&maxResults=1`,

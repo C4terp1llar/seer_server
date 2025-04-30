@@ -61,10 +61,8 @@ class AuthService {
 
     async getUser(str) {
         try {
-            return await Promise.any([
-                User.findOne({email: str}).select('-__v').lean(),
-                User.findOne({name: str}).select('-__v').lean()
-            ])
+            return await User.findOne({name: str}).select('-__v').lean()
+
         } catch (err) {
             console.error('Ошибка при поиске пользователя', err)
             throw err
