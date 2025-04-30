@@ -205,6 +205,7 @@ class AppController {
 
         try {
             const data = await AppService.getEventsByDay(req.uid, day, +page, +limit);
+            // const dd = await JiraService.getHighPriorityIssues(req.headers, 'SEER');
             return res.status(200).json({ ...data });
         } catch (err) {
             console.error("Ошибка при получении событий за день", err);
@@ -212,6 +213,21 @@ class AppController {
         }
     }
 
+    async getHighPriorityIssue(req, res) {
+        const { index, project } = req.query;
+
+        if (!index) {
+            return res.status(400).json({ error: "Необходимо указать index задачи" });
+        }
+
+        try {
+            const data = await JiraService.getHighPriorityIssueByIndex(req.headers, project || req.jiraData.project, +index);
+            return res.status(200).json({ ...data });
+        } catch (err) {
+            console.error("Ошибка при получении задачи с высоким приоритетом", err);
+            return res.status(500).json({ error: "Ошибка при получении задачи с высоким приоритетом" });
+        }
+    }
 
 }
 

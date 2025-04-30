@@ -22,14 +22,14 @@ class AuthController {
 
             const userJiraInfo = await AuthService.getUserJiraInfo(cookies)
 
-            let currentUser = await AuthService.getUser(userJiraInfo.data.email ?? userJiraInfo.data.name);
+            let currentUser = await AuthService.getUser(userJiraInfo.data.name);
 
             if (!currentUser) {
                 currentUser = await AuthService.createUser(userJiraInfo.data);
             }
 
             const userToken = JwtService.createToken({
-                email: currentUser.email ?? userJiraInfo.data.name,
+                email: currentUser.email ? currentUser.email : null,
                 uid: currentUser._id.toString(),
                 cookies: cookies
             })
@@ -38,7 +38,7 @@ class AuthController {
                 message: `Авторизация успешна! Добро пожаловать, ${currentUser.name}`,
                 token: userToken,
                 user: {
-                    email: currentUser.email,
+                    email: currentUser.email ? currentUser.email : null,
                     name: currentUser.name,
                     fullName: currentUser.fullName,
                     avatar: currentUser.avatar,

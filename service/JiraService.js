@@ -45,6 +45,44 @@ class JiraService {
         }
     }
 
+    // async getHighPriorityIssues(headers, projectKey) {
+    //     try {
+    //         const jql = `project=${projectKey} AND priority in (High, Highest)`;
+    //
+    //         const response = await baseAPI.get(`/rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=100`, { headers });
+    //
+    //         return { status: 200, data: response.data.issues };
+    //     } catch (err) {
+    //         console.error("Ошибка при получении задачи с высоким приоритетом:", err.response?.data || err.message);
+    //         return { status: err.response?.status || 500, data: null };
+    //     }
+    // }
+
+    async getHighPriorityIssueByIndex(headers, projectKey, index = 0) {
+        try {
+            const jql = `project=${projectKey} AND priority in (High, Highest) ORDER BY created DESC`;
+
+            const response = await baseAPI.get(
+                `/rest/api/2/search?jql=${encodeURIComponent(jql)}&startAt=${index}&maxResults=1`,
+                { headers }
+            );
+
+            return {
+                status: 200,
+                data: {
+                    issue: response.data.issues[0] || null,
+                    total: response.data.total,
+                    index,
+                    isFirst: index === 0,
+                    isLast: index >= response.data.total - 1
+                }
+            };
+        } catch (err) {
+            console.error("Ошибка при получении задачи:", err.response?.data || err.message);
+            return { status: err.response?.status || 500, data: null };
+        }
+    }
+
     async checkJqlQuery(headers, uid, jqlQuery, fields) {
         try {
 
@@ -81,6 +119,36 @@ class JiraService {
         }
     }
 
+    // async getIssueWorkflowStatuses(headers, issueKey) {
+    //     try {
+    //         const issueResponse = await baseAPI.get(`/rest/api/2/issue/${issueKey}`, { headers });
+    //         const projectKey = issueResponse.data.fields.project.key;
+    //         const issueTypeId = issueResponse.data.fields.issuetype.id;
+    //
+    //         // статусы для всех типов задач проекта
+    //         const statusesResponse = await baseAPI.get(`/rest/api/2/project/${projectKey}/statuses`, { headers });
+    //
+    //         //нужный issueType и возвращаем его статусы
+    //         const typeStatuses = statusesResponse.data.find(type => type.id === issueTypeId);
+    //
+    //         if (!typeStatuses) {
+    //             return { status: 404, data: null, message: "Тип задачи не найден в статусах проекта." };
+    //         }
+    //
+    //         return {
+    //             status: 200,
+    //             data: typeStatuses.statuses
+    //         };
+    //
+    //     } catch (err) {
+    //         console.error("Ошибка при получении статусов workflow:", err.response?.data || err.message);
+    //         return {
+    //             status: err.response?.status || 500,
+    //             data: null,
+    //             message: "Не удалось получить статусы workflow задачи."
+    //         };
+    //     }
+    // }
 
 }
 

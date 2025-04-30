@@ -29,4 +29,7 @@ router.get('/event/months', cookieMiddleware, AppController.getEventsByMonth);
 router.get('/event', cookieMiddleware, AppController.getEventsByDay);
 router.post('/event', cookieMiddleware, AppController.createEvent);
 
+router.get('/HPIssues/index', cookieMiddleware, AppController.getHighPriorityIssue);
+
+
 module.exports = router;
