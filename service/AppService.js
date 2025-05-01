@@ -224,6 +224,78 @@ class AppService {
         }
     }
 
+    async pinIssueToUser(uid, issueKey, headers) {
+        try {
+            const issue = await JiraService.getIssueByKey(headers, issueKey);
+            if (issue.status !== 200) {
+                return {
+                    status: 404,
+                    message: `Задача ${issueKey} не найдена.`
+                };
+            }
+
+            const user = await User.findById(uid);
+            if (!user) {
+                return {
+                    status: 404,
+                    message: "Пользователь не найден."
+                };
+            }
+
+            user.selectedTask = issueKey;
+            await user.save();
+
+            return {
+                status: 200,
+                data: issue.data
+            };
+        } catch (err) {
+            console.error("Ошибка при назначении задачи пользователю:", err);
+            return {
+                status: 500,
+                message: "Внутренняя ошибка при назначении задачи."
+            };
+        }
+    }
+
+    async getPinnedIssueForUser(uid, headers) {
+        try {
+            const user = await User.findById(uid);
+            if (!user) {
+                return {
+                    status: 404,
+                    message: "Пользователь не найден."
+                };
+            }
+
+            if (!user.selectedTask) {
+                return {
+                    status: 404,
+                    message: "У пользователя нет закреплённой задачи."
+                };
+            }
+
+            const issue = await JiraService.getIssueByKey(headers, user.selectedTask);
+            if (issue.status !== 200) {
+                return {
+                    status: 404,
+                    message: `Закреплённая задача ${user.selectedTask} не найдена в Jira.`
+                };
+            }
+
+            return {
+                status: 200,
+                data: issue.data
+            };
+        } catch (err) {
+            console.error("Ошибка при получении закреплённой задачи:", err);
+            return {
+                status: 500,
+                message: "Внутренняя ошибка при получении задачи."
+            };
+        }
+    }
+
 }
 
 module.exports = new AppService();

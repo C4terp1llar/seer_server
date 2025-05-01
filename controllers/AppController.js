@@ -205,7 +205,6 @@ class AppController {
 
         try {
             const data = await AppService.getEventsByDay(req.uid, day, +page, +limit);
-            // const dd = await JiraService.getHighPriorityIssues(req.headers, 'SEER');
             return res.status(200).json({ ...data });
         } catch (err) {
             console.error("Ошибка при получении событий за день", err);
@@ -226,6 +225,43 @@ class AppController {
         } catch (err) {
             console.error("Ошибка при получении задачи с высоким приоритетом", err);
             return res.status(500).json({ error: "Ошибка при получении задачи с высоким приоритетом" });
+        }
+    }
+
+    async getPaginatedIssues(req, res) {
+        const { startAt, maxResults, project, issueKey } = req.query;
+
+        try {
+            const data = await JiraService.getAllIssuesPaginated(
+                req.headers, project || req.jiraData.project, +startAt, +maxResults, issueKey || ""
+            );
+
+            return res.status(data.status).json({ ...data });
+        } catch (err) {
+            console.error("Ошибка при получении задач:", err);
+            return res.status(500).json({ error: "Ошибка при получении задач" });
+        }
+    }
+
+    async setPinIssue(req, res) {
+        const { key } = req.body;
+
+        try {
+            const data = await AppService.pinIssueToUser(req.uid, key, req.headers);
+            return res.status(data.status).json({ ...data });
+        } catch (err) {
+            console.error("Ошибка при закреплении задачи:", err);
+            return res.status(500).json({ error: "Ошибка при закреплении задачи" });
+        }
+    }
+
+    async getPinIssue(req, res) {
+        try {
+            const data = await AppService.getPinnedIssueForUser(req.uid, req.headers);
+            return res.status(data.status).json({ ...data });
+        } catch (err) {
+            console.error("Ошибка при получении закрепленной задачи:", err);
+            return res.status(500).json({ error: "Ошибка при получении закрепленной задачи" });
         }
     }
 

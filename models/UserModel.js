@@ -24,6 +24,11 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: false,
         default: null
+    },
+    selectedTask: {
+        type: String,
+        required: false,
+        default: null
     }
 });
 

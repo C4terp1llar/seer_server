@@ -19,7 +19,6 @@ class JiraService {
         }
     }
 
-
     async getIssuesStats(headers, project) {
         try {
             const baseFilter = `project=${project} AND created >= -30d`;
@@ -60,23 +59,24 @@ class JiraService {
     //     }
     // }
 
+    excludedStatuses = [
+        "Resolved",
+        "Closed",
+        "Done",
+        "Отмененный",
+        "Нет информации",
+        "Не актуально",
+        "Завершено",
+        "Заблокировано"
+    ];
+
     async getHighPriorityIssueByIndex(headers, projectKey, index = 0) {
         try {
-            const excludedStatuses = [
-                "Resolved",
-                "Closed",
-                "Done",
-                "Отмененный",
-                "Нет информации",
-                "Не актуально",
-                "Завершено",
-                "Заблокировано"
-            ];
-
             const jql = `
             project = ${projectKey}
             AND priority in (Критичный, Высокий)
-            AND status NOT IN (${excludedStatuses.map(s => `"${s}"`).join(", ")})
+            AND issuetype NOT IN ("Epic", "История")
+            AND status NOT IN (${this.excludedStatuses.map(s => `"${s}"`).join(", ")})
             ORDER BY created DESC
             `.trim();
 
@@ -167,6 +167,84 @@ class JiraService {
     //         };
     //     }
     // }
+
+    async getAllIssuesPaginated(headers, projectKey, startAt = 0, maxResults = 20, issueKeyFilter = "") {
+        try {
+            let jql = `project = ${projectKey}`;
+
+            if (issueKeyFilter?.trim()) {
+                jql += ` AND issuekey = "${issueKeyFilter.trim()}"`;
+            }
+
+            if (this.excludedStatuses.length > 0) {
+                const statusesString = this.excludedStatuses.map(status => `"${status}"`).join(", ");
+                jql += ` AND status NOT IN (${statusesString})`;
+            }
+
+            jql += ` AND issuetype NOT IN ("Epic", "История")`;
+            jql += " ORDER BY created DESC";
+
+            const requestBody = {
+                jql,
+                startAt,
+                maxResults,
+                fields: ["customfield_10408", "assignee", "issuetype", "status", "priority", "summary", "created"]
+            };
+
+            const response = await baseAPI.post(`/rest/api/2/search`, requestBody, { headers });
+
+            return {
+                status: 200,
+                data: {
+                    issues: response.data.issues,
+                    total: response.data.total,
+                    startAt: response.data.startAt,
+                    maxResults: response.data.maxResults,
+                    isLast: response.data.startAt + response.data.maxResults >= response.data.total
+                }
+            };
+        } catch (err) {
+            console.error("Ошибка при получении задач с пагинацией:", err.response?.data || err.message);
+            return {
+                status: err.response?.status || 500,
+                data: null,
+                message: "Не удалось получить список задач."
+            };
+        }
+    }
+
+    async getIssueByKey(headers, issueKey) {
+        try {
+            const response = await baseAPI.get(`/rest/api/2/issue/${issueKey}`, {
+                headers,
+                params: {
+                    fields: [
+                        "customfield_10408",
+                        "assignee",
+                        "issuetype",
+                        "status",
+                        "priority",
+                        "summary",
+                        "description",
+                        "updated",
+                        "created"
+                    ].join(",")
+                }
+            });
+
+            return {
+                status: 200,
+                data: response.data
+            };
+        } catch (err) {
+            console.error("Ошибка при получении задачи по ключу:", err.response?.data || err.message);
+            return {
+                status: err.response?.status || 500,
+                data: null,
+                message: `Не удалось получить задачу с ключом ${issueKey}.`
+            };
+        }
+    }
 
 }
 
