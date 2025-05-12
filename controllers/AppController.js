@@ -229,11 +229,11 @@ class AppController {
     }
 
     async getPaginatedIssues(req, res) {
-        const { startAt, maxResults, project, issueKey } = req.query;
+        const { startAt, maxResults, project, issueKey, issueSpec } = req.query;
 
         try {
             const data = await JiraService.getAllIssuesPaginated(
-                req.headers, project || req.jiraData.project, +startAt, +maxResults, issueKey || ""
+                req.headers, project || req.jiraData.project, +startAt, +maxResults, issueKey || "", issueSpec
             );
 
             return res.status(data.status).json({ ...data });

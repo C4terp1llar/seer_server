@@ -19,6 +19,14 @@ class JiraService {
         }
     }
 
+    queriesStats = {
+        total: ``,
+        in_work: ` AND status IN ("In Progress")`,
+        accepted: ` AND status IN ("Done")`,
+        to_do: ` AND status IN ("To Do")`,
+        errors: ` AND issuetype="Ошибка"`
+    };
+
     async getIssuesStats(headers, project) {
         try {
             const baseFilter = `project=${project} AND created >= -30d`;
@@ -168,7 +176,7 @@ class JiraService {
     //     }
     // }
 
-    async getAllIssuesPaginated(headers, projectKey, startAt = 0, maxResults = 20, issueKeyFilter = "") {
+    async getAllIssuesPaginated(headers, projectKey, startAt = 0, maxResults = 20, issueKeyFilter = "", issueSpecPriority = "") {
         try {
             let jql = `project = ${projectKey}`;
 
@@ -176,12 +184,20 @@ class JiraService {
                 jql += ` AND issuekey = "${issueKeyFilter.trim()}"`;
             }
 
-            if (this.excludedStatuses.length > 0) {
+            // обычное исключение статусов которое работает при запросе для получения задач для закрепления (пин виджет)
+            if (this.excludedStatuses.length > 0 && !issueSpecPriority) {
                 const statusesString = this.excludedStatuses.map(status => `"${status}"`).join(", ");
                 jql += ` AND status NOT IN (${statusesString})`;
             }
 
-            jql += ` AND issuetype NOT IN ("Epic", "История")`;
+            // спец сортировка по клику на стат айтем на фронте
+            if (issueSpecPriority){
+                jql += `${this.queriesStats[issueSpecPriority] ?? ''}`
+            }else{
+                // будут только если дефолтный запрос с виджета с пином таска (при общей стате по конкретному тайпу/статусу - не применяется)
+                jql += ` AND issuetype NOT IN ("Epic", "История")`;
+            }
+
             jql += " ORDER BY created DESC";
 
             const requestBody = {
